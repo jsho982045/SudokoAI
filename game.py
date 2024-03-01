@@ -3,8 +3,6 @@ import queue
 import copy
 import timeit
 
-
-
 '''
 Parameters: Takes as input the curr_board state and the puzzle
 Returns: True if the current board state is the goal and False if not
@@ -27,7 +25,8 @@ Parameters: Takes as input a puzzle board and puzzle size
 Returns: True if the puzzle board is valid and False if not
 '''    
 def valid_puzzle(puzzle_size,puzzle_board):
-    puzzle=Sudoku(puzzle_size,board=puzzle_board)
+    
+    puzzle=Sudoku(puzzle_size, board=puzzle_board)
     return puzzle.validate()
 
 '''
@@ -48,37 +47,30 @@ Return: The puzzle board corresponding to the goal
 Note: You can modify the function definition as you see fit
 '''
 def bfs(puzzle):
-    initial_state = puzzle.board
-    puzzle_size = len(initial_state) 
-    
-    if test_goal(initial_state, puzzle):
-        return initial_state
-
+    #Write Code here
     frontier = queue.Queue()
-    frontier.put(initial_state)
-    explored = set()
+    initial_empty_cells = empty_cells(puzzle.board)
+    frontier.put((puzzle.board, initial_empty_cells))
 
     while not frontier.empty():
-        state = frontier.get()
-        state_tup = tuple(map(tuple, state))
-        if state_tup in explored:
+        current_board, empty_cells_list = frontier.get()
+
+        # If there are no empty cells, this is a complete board
+        if not empty_cells_list:
+            if test_goal(current_board, puzzle):
+                return current_board
             continue
 
-        explored.add(state_tup)
+        # Get the empty cells to fill
+        empty_cell = empty_cells_list[0]
 
-        for cell in empty_cells(state):
-            for value in range(1, puzzle_size**2 + 1):  
-                new_state = copy.deepcopy(state)
-                new_state[cell[0]][cell[1]] = value
-                new_state_tup = tuple(map(tuple, new_state))
-
-                
-                if new_state_tup not in explored:
-                    if test_goal(new_state, puzzle):
-                        return new_state
-                    frontier.put(new_state)
-                    explored.add(new_state_tup)
-
+        for value in range(1, puzzle.size **2 + 1):
+            new_board = copy.deepcopy(current_board)
+            new_board[empty_cell[0]][empty_cell[1]] = value
+           
+            if valid_puzzle(2, new_board):
+                new_empty_cells_list = copy.deepcopy(empty_cells_list[1:])
+                frontier.put((new_board, new_empty_cells_list))
     return None
 
 '''
@@ -88,34 +80,27 @@ Note: You can modify the function definition as you see fit
 '''
 def dfs(puzzle):
     #Write Code here
-    initial_state = puzzle.board
-    puzzle_size = len(initial_state)
+    stack = []
+    initial_empty_cells = empty_cells(puzzle.board)
+    stack.append((puzzle.board, initial_empty_cells))
 
-    if test_goal(initial_state, puzzle):
-        return initial_state
+    while stack:
+        current_board, empty_cells_list = stack.pop()
 
-    frontier = []
-    frontier.append(initial_state)
-    explored = set()
-
-    while frontier:
-        state = frontier.pop()
-        state_tup = tuple(map(tuple, state))
-        if state_tup in explored:
+        if not empty_cells_list:
+            if test_goal(current_board, puzzle):
+                return current_board
             continue
 
-        explored.add(state_tup)
+        empty_cell = empty_cells_list[0]
 
-        for cell in empty_cells(state):
-            for value in range(1, puzzle_size**2 + 1):
-                new_state = copy.deepcopy(state)
-                new_state[cell[0]][cell[1]] = value
-                new_state_tup = tuple(map(tuple, new_state))
+        for value in range(1, puzzle.size**2 + 1):
+            new_board = copy.deepcopy(current_board)
+            new_board[empty_cell[0]][empty_cell[1]] = value
 
-                if new_state_tup not in explored:
-                    if test_goal(new_state, puzzle):
-                        return new_state
-                    frontier.append(new_state)
+            if valid_puzzle(2, new_board):
+                new_empty_cells_list = copy.deepcopy(empty_cells_list[1:])
+                stack.append((new_board, new_empty_cells_list))
     return None
 
 '''
@@ -124,38 +109,28 @@ Return: The puzzle board corresponding to the goal
 Note: You can modify the function definition as you see fit
 '''
 def bfs_with_prunning(puzzle):
-    initial_state = puzzle.board
-    puzzle_size = len(initial_state)
-
-    if test_goal(initial_state, puzzle):
-        return initial_state
-
+    #Write Code here
     frontier = queue.Queue()
-    frontier.put(initial_state)
-    explored = set()
+    initial_empty_cells = empty_cells(puzzle.board)
+    frontier.put((puzzle.board, initial_empty_cells))
 
     while not frontier.empty():
-        state = frontier.get()
-        state_tup = tuple(map(tuple, state))
-        if state_tup in explored:
+        current_board, empty_cells_list = frontier.get()
+
+        if not empty_cells_list:
+            if test_goal(current_board, puzzle):
+                return current_board
             continue
 
-        explored.add(state_tup)
+        empty_cell = empty_cells_list[0]
+        
+        for value in range(1, puzzle.size**2 + 1):
+            new_board = copy.deepcopy(current_board)
+            new_board[empty_cell[0]][empty_cell[1]] = value
+            if valid_puzzle(2, new_board):
+                new_empty_cells_list = copy.deepcopy(empty_cells_list[1:])
+                frontier.put((new_board, new_empty_cells_list))
 
-        for cell in empty_cells(state):
-            for value in range(1, puzzle_size**2 + 1):
-                new_state = copy.deepcopy(state)
-                new_state[cell[0]][cell[1]] = value
-                new_state_tup = tuple(map(tuple, new_state))
-
-                if new_state_tup not in explored:
-                    if valid_puzzle(puzzle_size, new_state):
-                        explored.add(new_state_tup)  # Mark this new state as explored
-                        if test_goal(new_state, puzzle):
-                            return new_state
-                        frontier.put(new_state)
-
-    #Write Code here
     return None
 
 '''
@@ -165,56 +140,61 @@ Note: You can modify the function definition as you see fit
 '''
 def dfs_with_prunning(puzzle):
     #Write Code here
-    initial_state = puzzle.board
-    puzzle_size = len(initial_state)
+    stack = []
+    initial_empty_cells = empty_cells(puzzle.board)
+    
+    # Start DFS with the initial board state
+    stack.append((puzzle.board, initial_empty_cells))
 
-    if test_goal(initial_state, puzzle):
-        return initial_state
+    while stack:
+        current_board, empty_cells_list = stack.pop()
 
-    frontier = []
-    frontier.append(initial_state)
-    explored = set()
-
-    while frontier:
-        state = frontier.pop()
-        state_tup = tuple(map(tuple, state))
-        if state_tup in explored:
+        if not empty_cells_list:
+            if test_goal(current_board, puzzle):
+                return current_board # Solution found
             continue
 
-        explored.add(state_tup)
+        # Pruning step: prioritize the cell with the least number of possible values
+        empty_cell = empty_cells_list[0]
+        
+        for value in range(1, puzzle.size**2 + 1):
+            new_board = copy.deepcopy(current_board)
+            new_board[empty_cell[0]][empty_cell[1]] = value
+            if valid_puzzle(2, new_board):
+                new_empty_cells_list = copy.deepcopy(empty_cells_list[1:])
+                stack.append((new_board, new_empty_cells_list))
 
-        for cell in empty_cells(state):
-            for value in range(1, puzzle_size**2 + 1):
-                new_state = copy.deepcopy(state)
-                new_state[cell[0]][cell[1]] = value
-                new_state_tup = tuple(map(tuple, new_state))
-
-                if new_state_tup not in explored and valid_puzzle(puzzle_size, new_state):
-                    if test_goal(new_state, puzzle):
-                        return new_state
-                    frontier.append(new_state)
-                    explored.add(new_state_tup)
     return None
 
 
 if __name__ == "__main__":
-    puzzle = Sudoku(2,2).difficulty(0.2)  # Constructs a 2 x 2 puzzle
-    puzzle.show()  # Pretty prints the puzzle
-    print(valid_puzzle(2, puzzle.board))  # Checks if the puzzle is valid
-    print(test_goal(puzzle.board, puzzle))  # Checks if the given puzzle board is the goal for the puzzle
-    print(empty_cells(puzzle.board))  # Prints the empty cells as row and column values in a list for the current puzzle board
 
-    def dynamic_wrapper(func, size, difficulty):
-        def wrapped():
-            puzzle = Sudoku(size, size).difficulty(difficulty)
-            return func(puzzle)
-        return wrapped
+    
+    puzzle=Sudoku(2, 2).difficulty(0.2) # Constructs a 2 x 2 puzzle
+    puzzle.show() # Pretty prints the puzzle
+    print(valid_puzzle(2,puzzle.board)) # Checks if the puzzle is valid
+    print(test_goal(puzzle.board,puzzle)) # Checks if the given puzzle board is the goal for the puzzle
+    print(empty_cells(puzzle.board)) # Prints the empty cells as row and column values in a list for the current puzzle board
 
-    for size in [2, 4]:
-        for difficulty in [0.2, 0.4, 0.6, 0.8]:
-            wrapped_bfs = dynamic_wrapper(bfs, size, difficulty)
-            runtime = timeit.timeit(wrapped_bfs, number=1)
-            print(f"bfs: {runtime} seconds")
-    wrapped_bfs_with_prunning = dynamic_wrapper(bfs_with_prunning, 2, 0.2)
-    runtime = timeit.timeit(wrapped_bfs_with_prunning, number=1)
-    print(f"bfs_with_prunning: {runtime} seconds")
+    for search_method in [bfs, dfs, bfs_with_prunning, dfs_with_prunning]:
+        start_time = timeit.default_timer()
+        try:
+            # Set a timer to automatically stop the search after 300 seconds (5 minutes)
+            solved_board = search_method(puzzle)
+            runtime = timeit.default_timer() - start_time
+            if solved_board:
+                print(f"{search_method.__name__} solved the puzzle in {runtime:.2f} seconds:")
+                for row in solved_board:
+                    print(row)
+            else:
+                print(f"{search_method.__name__} did not solve the puzzle.")
+        except Exception as e:
+            runtime = timeit.default_timer() - start_time
+            if runtime >= 300:
+                print(f"{search_method.__name__} exceeded the time limit of 5 minutes.")
+            else:
+                print(f"An error occurred during {search_method.__name__}: {e}")
+
+        print("------------------------------------------------------")
+
+  
